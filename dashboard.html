@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    input, select {
+      padding: 8px;
+      margin: 5px;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      margin: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    table {
+      margin-top: 20px;
+      background: white;
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>Dashboard</h2>
+
+<!-- Logout -->
+<button onclick="logout()">Logout</button>
+
+<br><br>
+
+<input type="text" id="title" placeholder="Title">
+<input type="text" id="description" placeholder="Description">
+
+<select id="status">
+  <option value="active">Active</option>
+  <option value="completed">Completed</option>
+</select>
+
+<button onclick="addItem()">Add / Update Item</button>
+
+<!-- Table UI -->
+<table id="itemTable">
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Description</th>
+      <th>Status</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+
+const API = "http://localhost:5000/api/items";
+
+let editId = null;
+
+// GET ITEMS
+function getItems() {
+  fetch(API)
+    .then(res => res.json())
+    .then(data => {
+      const table = document.querySelector("#itemTable tbody");
+      table.innerHTML = "";
+
+      data.forEach(item => {
+        const row = `
+          <tr>
+            <td>${item.title}</td>
+            <td>${item.description}</td>
+            <td>${item.status}</td>
+            <td>
+              <button onclick="editItem(${item.id}, '${item.title}', '${item.description}', '${item.status}')">Edit</button>
+              <button onclick="deleteItem(${item.id})">Delete</button>
+            </td>
+          </tr>
+        `;
+        table.innerHTML += row;
+      });
+    });
+}
+
+// ADD / UPDATE ITEM
+function addItem() {
+  const title = document.getElementById("title").value;
+  const description = document.getElementById("description").value;
+  const status = document.getElementById("status").value;
+
+  // ✅ Validation
+  if (!title || !description) {
+    alert("Please fill all fields");
+    return;
+  }
+
+  if (editId) {
+    // UPDATE
+    fetch(`${API}/${editId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ title, description, status })
+    })
+    .then(() => {
+      alert("Item updated successfully");
+      editId = null;
+      clearInputs();
+      getItems();
+    });
+
+  } else {
+    // CREATE
+    fetch(API, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ title, description, status })
+    })
+    .then(() => {
+      alert("Item added successfully");
+      clearInputs();
+      getItems();
+    });
+  }
+}
+
+// DELETE ITEM
+function deleteItem(id) {
+  fetch(`${API}/${id}`, {
+    method: "DELETE"
+  })
+  .then(() => {
+    alert("Item deleted");
+    getItems();
+  });
+}
+
+// EDIT ITEM
+function editItem(id, title, description, status) {
+  document.getElementById("title").value = title;
+  document.getElementById("description").value = description;
+  document.getElementById("status").value = status;
+
+  editId = id;
+}
+
+// CLEAR INPUTS
+function clearInputs() {
+  document.getElementById("title").value = "";
+  document.getElementById("description").value = "";
+  document.getElementById("status").value = "active";
+}
+
+// LOGOUT
+function logout() {
+  alert("Logged out");
+  window.location.href = "login.html";
+}
+
+// LOAD DATA
+getItems();
+
+</script>
+
+</body>
+</html>
